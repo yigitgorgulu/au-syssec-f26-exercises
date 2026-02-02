@@ -135,7 +135,7 @@ image.encrypt(key, 'ecb')
 image.write_to_file(open('image_encrypted.ppm', 'wb'))
 ```
 
-Run the function named 'Test1` and open the encrypted image. What do you observe?
+Run the function named 'test1` and open the encrypted image. What do you observe?
 
 Try to modify encrypted pictures, and observe how the picture has changed after decryption.
 For this you can use a hex editor, or you just access the `.data` property of
@@ -143,7 +143,7 @@ an `PPMImage` instance:
 ```python
 image.data[42] = 0x42  # set the byte at position 42 to the value 0x42
 ```
-Extend the function named `Test1` as follows:
+Extend the function named `test1` as follows:
 ```python
 image.encrypt(key, 'ecb')
 image.data[42] = 0x42  # This line has been added.
