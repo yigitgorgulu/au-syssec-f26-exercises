@@ -71,11 +71,10 @@ class PPMImage:
             # add a comment that we use ECB mode
             self.comments.append(b'X-mode: ecb')
         elif mode.lower() == 'cbc':
-            # --------- add your code here --------
-            raise NotImplementedError(f'mode of operation {mode} not implemented')
-            # iv = ???
-            # ciphertext = ???
-            # ----- end add your code here --------
+            iv = secrets.token_bytes(16)
+            aes = AES.new(key, AES.MODE_CBC, iv=iv)
+            padded_plaintext = pad(self.data, 16)
+            ciphertext = aes.encrypt(padded_plaintext)
             # replace the image data with the ciphertext
             self.data = bytearray(ciphertext)
             # add a comment that we use CBC mode
@@ -83,11 +82,10 @@ class PPMImage:
             # store the IV in a comment
             self.comments.append(f'X-iv: {iv.hex()}'.encode())
         elif mode.lower() == 'ctr':
-            # --------- add your code here --------
-            raise NotImplementedError(f'mode of operation {mode} not implemented')
-            # nonce = ???
-            # ciphertext = ???
-            # ----- end add your code here --------
+            nonce = secrets.token_bytes(8)
+            aes = AES.new(key, AES.MODE_CTR, nonce=nonce)
+            padded_plaintext = pad(self.data, 16)
+            ciphertext = aes.encrypt(padded_plaintext)
             # replace the image data with the ciphertext
             self.data = bytearray(ciphertext)
             # add a comment that we use CTR mode
@@ -160,10 +158,9 @@ class PPMImage:
         elif mode.lower() == 'cbc':
             # Read the used IV from the comments
             iv = bytes.fromhex(find_property_in_comments('iv'))
-            # --------- add your code here --------
-            raise NotImplementedError(f'mode of operation {mode} not implemented')
-            # plaintext = ???
-            # ----- end add your code here --------
+            aes = AES.new(key, AES.MODE_CBC, iv=iv)
+            padded_plaintext = aes.decrypt(self.data)
+            plaintext = unpad(padded_plaintext, 16)
             # replace the image data with the plaintext
             self.data = bytearray(plaintext)
             # remove the comments where we stored the additional data
@@ -171,10 +168,9 @@ class PPMImage:
         elif mode.lower() == 'ctr':
             # Read the used nonce from the comments
             nonce = bytes.fromhex(find_property_in_comments('nonce'))
-            # --------- add your code here --------
-            raise NotImplementedError(f'mode of operation {mode} not implemented')
-            # plaintext = ???
-            # ----- end add your code here --------
+            aes = AES.new(key, AES.MODE_CTR, nonce=nonce)
+            padded_plaintext = aes.decrypt(self.data)
+            plaintext = unpad(padded_plaintext, 16)
             # replace the image data with the plaintext
             self.data = bytearray(plaintext)
             # remove the comments where we stored the additional data
@@ -329,9 +325,11 @@ def task1():
         image = PPMImage.load_from_file(f)
 
     key = secrets.token_bytes(16)
-    image.encrypt(key, 'ecb')
+    image.encrypt(key, 'ctr')
+    # image.data[0] = 0x42
+    # image.decrypt(key)
 
-    with open('ecb_encrypted.ppm', 'wb') as f:   # open the image writable in binary mode (with options 'w' and 'b')
+    with open('ctr_encrypted.ppm', 'wb') as f:   # open the image writable in binary mode (with options 'w' and 'b')
             image.write_to_file(f)
     return 
 
@@ -340,7 +338,18 @@ def task2():
     return 
 
 def task3():
-    # --------- add your code here --------
+    with open('dk.ppm', 'rb') as dk, open('dk.ppm', 'rb') as dk_o, open('se.ppm', 'rb') as se:
+        image_dk = PPMImage.load_from_file(dk)
+        image_dk_o = PPMImage.load_from_file(dk_o)
+        image_se = PPMImage.load_from_file(se)
+
+    key = secrets.token_bytes(16)
+    image_dk.encrypt(key, 'ctr')
+    image_dk.data = []
+    image_dk.data ^ image_dk_o.data ^ image_se.data
+
+    with open('SVENSKER.ppm', 'wb') as f:   # open the image writable in binary mode (with options 'w' and 'b')
+            image_dk.write_to_file(f)
     return 
 
 def task4():
@@ -356,7 +365,7 @@ if __name__ == '__main__':
     task1()
 
     # task2()
-    # task3()
+    task3()
     # task4()
     # task5()
 
