@@ -10,8 +10,7 @@ def decrypt(c, d, N):
     r = 1
     x = c % N
     while d > 0:
-        if d & 1:
-            r = (r * x) % N
+        r = (r + (r * (x - 1) * (d & 1))) % N
         x = (x * x) % N
         d >>= 1
     return r
@@ -21,9 +20,18 @@ def decrypt_ltor(c, d, N):
     r = 1
     for i in range(d.bit_length() - 1, -1, -1):
         r = (r * r) % N
-        if (d >> i) & 1:
-            r = (r * c) % N
+        r = (r + (r * (c - 1) * ((d >> i) & 1))) % N
     return r
+
+def decrypt_ml(c, d, N):
+    r_1 = c % N
+    r_2 = (c * c) % N
+    for i in range(d.bit_length() - 2, -1, -1):
+        if (d >> i) & 1:
+            r_1, r_2 = (r_1 * r_2) % N, (r_2 * r_2) % N
+        else:
+            r_1, r_2 = (r_1 * r_1) % N, (r_1 * r_2) % N
+    return r_1
 
 def main(bits, message):
     # key generation
@@ -57,10 +65,11 @@ def main(bits, message):
     plain = dec.to_bytes((N.bit_length() + 7) // 8, 'big')
     print()
     print(f"RSA ciphertext = {enc}")
-    print(f"RSA plaintext = {plain.decode("utf-8")}")
+    print(f"RSA plaintext = {plain.decode('utf-8')}")
 
     assert dec == m
     assert decrypt(enc, d, N) == decrypt_ltor(enc, d, N)
+    assert decrypt(enc, d, N) == decrypt_ml(enc, d, N)
 
 if __name__ == '__main__':
     if (len(sys.argv) < 3):
